@@ -3,7 +3,7 @@
 # FFmpeg is the key one — it's what actually cuts the videos.
 
 [phases.setup]
-nixPkgs = ["ffmpeg", "python311"]
+nixPkgs = ["ffmpeg", "python311Full"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
