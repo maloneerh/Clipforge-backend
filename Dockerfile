@@ -1,32 +1,43 @@
-# Dockerfile
-# Tells Railway exactly how to build and run ClipForge.
-# Using Python 3.11 slim as the base — lightweight but complete.
+python:3.11-slim
 
-FROM python:3.11-slim
-
-# Install FFmpeg and other system dependencies
+# Install system dependencies including FFmpeg
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     git \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory inside the container
+# Upgrade pip first
+RUN pip install --upgrade pip
+
+# Set working directory
 WORKDIR /app
 
-# Copy requirements first (so Docker caches this layer)
+# Copy requirements and install in stages
+# (splitting reduces chance of timeout)
 COPY requirements.txt .
 
-# Install Python packages
-RUN pip install --no-cache-dir -r requirements.txt
+# Install heavy packages first separately
+RUN pip install --no-cache-dir torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
-# Copy the rest of the code
+# Install the rest
+RUN pip install --no-cache-dir \
+    fastapi==0.111.0 \
+    uvicorn[standard]==0.29.0 \
+    python-multipart==0.0.9 \
+    yt-dlp==2024.5.27 \
+    openai-whisper==20231117 \
+    anthropic==0.28.0 \
+    python-dotenv==1.0.1 \
+    aiofiles==23.2.1 \
+    httpx==0.27.0
+
+# Copy all code
 COPY . .
 
 # Create temp directories
 RUN mkdir -p temp/downloads temp/clips
 
-# Expose port (Railway sets $PORT automatically)
 EXPOSE 8000
 
-# Start the server
 CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
